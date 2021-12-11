@@ -3326,8 +3326,10 @@ void Framework::OnRouteFollow(routing::RouterType type)
 // RoutingManager::Delegate
 void Framework::RegisterCountryFilesOnRoute(shared_ptr<routing::NumMwmIds> ptr) const
 {
-  m_storage.ForEachCountryFile(
-      [&ptr](platform::CountryFile const & file) { ptr->RegisterFile(file); });
+  m_storage.ForEachCountry([&ptr](storage::Country const & country)
+  {
+    ptr->RegisterFile(country.GetFile());
+  });
 }
 
 void Framework::SetPlacePageLocation(place_page::Info & info)

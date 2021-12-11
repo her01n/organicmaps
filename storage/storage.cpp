@@ -704,7 +704,7 @@ void Storage::RegisterDownloadedFiles(CountryId const & countryId, MapFileType t
 
   CountryFile const countryFile = GetCountryFile(countryId);
   LocalFilePtr localFile = GetLocalFile(countryId, GetCurrentDataVersion());
-  if (!localFile)
+  if (!localFile || localFile->IsResource())
     localFile = PreparePlaceForCountryFiles(GetCurrentDataVersion(), m_dataDir, countryFile);
   if (!localFile)
   {
@@ -854,7 +854,12 @@ void Storage::RegisterCountryFiles(LocalFilePtr localFile)
   {
     LocalFilePtr existingFile = GetLocalFile(countryId, localFile->GetVersion());
     if (existingFile)
-      ASSERT_EQUAL(localFile.get(), existingFile.get(), ());
+    {
+      if (existingFile->IsResource())
+        *existingFile = *localFile;
+      else
+        ASSERT_EQUAL(localFile.get(), existingFile.get(), ());
+    }
     else
       m_localFiles[countryId].push_front(localFile);
   }
@@ -1240,6 +1245,11 @@ bool Storage::IsDisputed(CountryTree::Node const & node) const
   vector<CountryTree::Node const *> found;
   m_countries.Find(node.Value().Name(), found);
   return found.size() > 1;
+}
+
+bool Storage::IsCountryLeaf(CountryTree::Node const & node) const
+{
+  return (node.ChildrenCount() == 0 && !strings::StartsWith(node.Value().Name(), "World"));
 }
 
 void Storage::CalcMaxMwmSizeBytes()

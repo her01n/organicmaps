@@ -33,9 +33,7 @@ char const kBitsExt[] = ".bftsegbits";
 char const kNodesExt[] = ".bftsegnodes";
 char const kOffsetsExt[] = ".offsets";
 
-size_t const kMaxTimestampLength = 18;
-
-string GetSpecialFilesSearchScope()
+string GetAdditionalWorldScope()
 {
   return "r";
 }
@@ -240,8 +238,8 @@ void FindAllLocalMapsAndCleanup(int64_t latestVersion, string const & dataDir,
       LOG(LWARNING, ("Can't remove directory:", fullPath, err));
   }
 
-  // World and WorldCoasts can be stored in app bundle or in resources
-  // directory, thus it's better to get them via Platform.
+  // Check for World and WorldCoasts in app bundle or in resources.
+  Platform & platform = GetPlatform();
   string const world(WORLD_FILE_NAME);
   string const worldCoasts(WORLD_COASTS_FILE_NAME);
   for (string const & file : {world, worldCoasts})
@@ -255,20 +253,20 @@ void FindAllLocalMapsAndCleanup(int64_t latestVersion, string const & dataDir,
 
     try
     {
-      Platform & platform = GetPlatform();
-      ModelReaderPtr reader(
-          platform.GetReader(file + DATA_FILE_EXTENSION, GetSpecialFilesSearchScope()));
+      ModelReaderPtr reader(platform.GetReader(file + DATA_FILE_EXTENSION, GetAdditionalWorldScope()));
 
-      // Assume that empty path means the resource file.
-      LocalCountryFile worldFile{string(), CountryFile(file), version::ReadVersionDate(reader)};
-      worldFile.m_files[base::Underlying(MapFileType::Map)] = 1;
+      // Empty path means the resource file.
+      LocalCountryFile worldFile(string(), CountryFile(file), version::ReadVersionDate(reader));
+      worldFile.m_files[base::Underlying(MapFileType::Map)] = reader.Size();
+
+      // Replace if newer only.
       if (i != localFiles.end())
       {
-        // Always use resource World files instead of local on disk.
-        *i = worldFile;
+        if (worldFile.GetVersion() > i->GetVersion())
+          *i = worldFile;
       }
       else
-        localFiles.push_back(worldFile);
+        localFiles.push_back(std::move(worldFile));
     }
     catch (RootException const & ex)
     {
@@ -289,7 +287,8 @@ void CleanupMapsDirectory(int64_t latestVersion)
 
 bool ParseVersion(string const & s, int64_t & version)
 {
-  if (s.empty() || s.size() > kMaxTimestampLength)
+  // Folder version format is 211122. Unit tests use simple "1", "2" versions.
+  if (s.empty() || s.size() > 6)
     return false;
 
   int64_t v = 0;
@@ -340,12 +339,10 @@ unique_ptr<ModelReader> GetCountryReader(platform::LocalCountryFile const & file
 {
   Platform & platform = GetPlatform();
   // See LocalCountryFile comment for explanation.
-  if (file.GetDirectory().empty())
-  {
-    return platform.GetReader(file.GetCountryName() + DATA_FILE_EXTENSION,
-                              GetSpecialFilesSearchScope());
-  }
-  return platform.GetReader(file.GetPath(type), "f");
+  if (file.IsResource())
+    return platform.GetReader(file.GetCountryName() + DATA_FILE_EXTENSION, GetAdditionalWorldScope());
+  else
+    return platform.GetReader(file.GetPath(type), "f");
 }
 
 // static

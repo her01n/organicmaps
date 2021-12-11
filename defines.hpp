@@ -76,6 +76,7 @@
 
 #define COUNTRIES_FILE "countries.txt"
 #define SERVER_DATAVERSION_FILE "data_version.json"
+#define COUNTRIES_ROOT "Countries"
 
 #define COUNTRIES_META_FILE "countries_meta.txt"
 #define LEAP_SPEEDS_FILE "leap_speeds.json"

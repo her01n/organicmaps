@@ -446,15 +446,14 @@ public:
   std::vector<base::GeoObjectId> GetTopCountryGeoIds(CountryId const & countryId) const;
   /// @}
 
-  /// \brief Calls |toDo| for each node for subtree with |root|.
-  /// For example ForEachInSubtree(GetRootId()) calls |toDo| for every node including
-  /// the result of GetRootId() call.
+  /// For each node with \a root subtree (including).
   template <class ToDo>
   void ForEachInSubtree(CountryId const & root, ToDo && toDo) const;
   template <class ToDo>
   void ForEachAncestorExceptForTheRoot(CountryId const & childId, ToDo && toDo) const;
   template <class ToDo>
-  void ForEachCountryFile(ToDo && toDo) const;
+  /// For each leaf country excluding Worlds.
+  void ForEachCountry(ToDo && toDo) const;
 
   /// \brief Sets callback which will be called in case of a click on download map button on the map.
   void SetCallbackForClickOnDownloadMap(DownloadFn & downloadFn);
@@ -508,7 +507,7 @@ public:
   // Returns true iff |countryId| exists as a node in the tree.
   bool IsNode(CountryId const & countryId) const;
 
-  // Returns true iff |countryId| is a leaf of the tree.
+  /// @return true iff \a countryId is a leaf of the tree.
   bool IsLeaf(CountryId const & countryId) const;
 
   // Returns true iff |countryId| is an inner node of the tree.
@@ -609,6 +608,7 @@ private:
 
   /// Returns status for a node (group node or not).
   StatusAndError GetNodeStatus(CountryTree::Node const & node) const;
+
   /// Returns status for a node (group node or not).
   /// Fills |disputedTeritories| with all disputed teritories in subtree with the root == |node|.
   StatusAndError GetNodeStatusInfo(
@@ -631,8 +631,11 @@ private:
   void ForEachAncestorExceptForTheRoot(std::vector<CountryTree::Node const *> const & nodes,
                                        ToDo && toDo) const;
 
-  /// Returns true if |node.Value().Name()| is a disputed territory and false otherwise.
+  /// @return true if |node.Value().Name()| is a disputed territory and false otherwise.
   bool IsDisputed(CountryTree::Node const & node) const;
+
+  /// @return true iff \a node is a leaf of the tree (country file) and NOT Worlds.
+  bool IsCountryLeaf(CountryTree::Node const & node) const;
 
   void CalcMaxMwmSizeBytes();
 
@@ -709,11 +712,12 @@ void Storage::ForEachAncestorExceptForTheRoot(std::vector<CountryTree::Node cons
 }
 
 template <class ToDo>
-void Storage::ForEachCountryFile(ToDo && toDo) const
+void Storage::ForEachCountry(ToDo && toDo) const
 {
-  m_countries.GetRoot().ForEachInSubtree([&](CountryTree::Node const & node) {
-    if (node.ChildrenCount() == 0)
-      toDo(node.Value().GetFile());
+  m_countries.GetRoot().ForEachInSubtree([&](CountryTree::Node const & node)
+  {
+    if (IsCountryLeaf(node))
+      toDo(node.Value());
   });
 }
 }  // namespace storage

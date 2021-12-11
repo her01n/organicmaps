@@ -65,11 +65,13 @@ public:
   // value will be false until SyncWithDisk() is called.
   bool OnDisk(MapFileType type) const;
 
+  bool IsResource() const { return m_directory.empty(); }
+
   std::string const & GetDirectory() const { return m_directory; }
   std::string const & GetCountryName() const { return m_countryFile.GetName(); }
   int64_t GetVersion() const { return m_version; }
   CountryFile const & GetCountryFile() const { return m_countryFile; }
-  CountryFile & GetCountryFile() { return m_countryFile; }
+  //CountryFile & GetCountryFile() { return m_countryFile; }
 
   bool operator<(LocalCountryFile const & rhs) const;
   bool operator==(LocalCountryFile const & rhs) const;
