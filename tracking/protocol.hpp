@@ -7,14 +7,14 @@
 #include <utility>
 #include <vector>
 
-#if defined(__clang__)
+#if defined(__clang__) && !defined(__ANDROID__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-copy"
 #endif
 
 #include <boost/circular_buffer.hpp>
 
-#if defined(__clang__)
+#if defined(__clang__) && !defined(__ANDROID__)
 #pragma clang diagnostic pop
 #endif
 
